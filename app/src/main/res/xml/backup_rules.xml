@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Excluye la base de datos local (Room) del backup automático.
+   Contiene datos personales (DNI/RUC, teléfonos, emails, sesión activa)
+   que no deben terminar en el backup de Google Drive del usuario.
+   Nota: este archivo aplica a dispositivos API 23-30.
+   Para API 31+ ver data_extraction_rules.xml (el que realmente importa hoy)
+-->
+<full-backup-content>
+    <exclude domain="database" path="la_bajada_database" />
+    <exclude domain="database" path="la_bajada_database-wal" />
+    <exclude domain="database" path="la_bajada_database-shm" />
+    <exclude domain="database" path="la_bajada_database-journal" />
+</full-backup-content>

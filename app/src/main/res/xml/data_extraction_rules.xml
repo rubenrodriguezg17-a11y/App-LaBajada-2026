@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Excluye la base de datos local (Room) del backup en la nube y de la
+   transferencia entre dispositivos. Contiene datos personales (DNI/RUC,
+   teléfonos, emails, sesión activa) que no deben salir del dispositivo
+   sin control (Android 12+, API 31+).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="la_bajada_database" />
+        <exclude domain="database" path="la_bajada_database-wal" />
+        <exclude domain="database" path="la_bajada_database-shm" />
+        <exclude domain="database" path="la_bajada_database-journal" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="la_bajada_database" />
+        <exclude domain="database" path="la_bajada_database-wal" />
+        <exclude domain="database" path="la_bajada_database-shm" />
+        <exclude domain="database" path="la_bajada_database-journal" />
+    </device-transfer>
+</data-extraction-rules>
