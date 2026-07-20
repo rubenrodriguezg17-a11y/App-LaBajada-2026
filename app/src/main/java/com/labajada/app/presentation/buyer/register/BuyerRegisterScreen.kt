@@ -16,9 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -63,7 +61,7 @@ fun BuyerRegisterScreen(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Cabecera estilizada
+            // Cabecera — Naranja Cercanía domina el registro de comprador: accesible, rápido, sin fricción.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -72,17 +70,17 @@ fun BuyerRegisterScreen(
             ) {
                 Text(
                     text = "¡Estás a un paso!",
-                    fontSize = 32.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Black,
-                    color = RojoGochujang,
-                    letterSpacing = (-0.5).sp
+                    fontSize = 30.sp,
+                    fontFamily = Bangers,
+                    color = NaranjaCercania,
+                    letterSpacing = 0.3.sp
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Queremos conocerte para mostrarte un huarique al toque.",
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Light,
+                    fontFamily = Nunito,
+                    fontWeight = FontWeight.Normal,
                     color = TextoSecundario,
                     lineHeight = 22.sp
                 )
@@ -90,10 +88,10 @@ fun BuyerRegisterScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Tarjeta Contenedor Premium (Agrupa el formulario)
+            // Tarjeta Contenedor (Agrupa el formulario)
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
             ) {
@@ -106,16 +104,17 @@ fun BuyerRegisterScreen(
                     OutlinedTextField(
                         value = uiState.name,
                         onValueChange = { viewModel.onNameChange(it) },
-                        label = { Text("Tu Nombre o Apodo", fontWeight = FontWeight.Medium) },
+                        label = { Text("Tu Nombre o Apodo", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF2F0EB),
-                            unfocusedContainerColor = Color(0xFFF2F0EB),
+                            focusedContainerColor = SuperficieCampo,
+                            unfocusedContainerColor = SuperficieCampo,
                             focusedBorderColor = if (uiState.name.isNotBlank()) VerdeMatcha else BordeSuave,
                             unfocusedBorderColor = BordeSuave,
-                            cursorColor = RojoGochujang,
+                            cursorColor = NaranjaCercania,
                             focusedLabelColor = TextoPrincipal
                         )
                     )
@@ -124,26 +123,28 @@ fun BuyerRegisterScreen(
                         OutlinedTextField(
                             value = uiState.phone,
                             onValueChange = { if (it.length <= 9 && it.all(Char::isDigit)) viewModel.onPhoneChange(it) },
-                            label = { Text("Número de Celular", fontWeight = FontWeight.Medium) },
+                            label = { Text("Número de Celular", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             isError = !isPhoneValid,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF2F0EB),
-                                unfocusedContainerColor = Color(0xFFF2F0EB),
-                                focusedBorderColor = if (isPhoneValid && uiState.phone.isNotEmpty()) VerdeMatcha else RojoGochujang,
+                                focusedContainerColor = SuperficieCampo,
+                                unfocusedContainerColor = SuperficieCampo,
+                                focusedBorderColor = if (isPhoneValid && uiState.phone.isNotEmpty()) VerdeMatcha else RojoAlerta,
                                 unfocusedBorderColor = if (isPhoneValid && uiState.phone.isNotEmpty()) VerdeMatcha.copy(alpha = 0.5f) else BordeSuave,
-                                cursorColor = RojoGochujang,
+                                cursorColor = NaranjaCercania,
                                 focusedLabelColor = TextoPrincipal
                             )
                         )
                         if (!isPhoneValid) {
                             Text(
                                 text = "Celular inválido (9 dígitos, empieza con 9)",
-                                color = Color(0xFFB71C1C),
+                                color = RojoAlerta,
                                 fontSize = 12.sp,
+                                fontFamily = Nunito,
                                 modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                             )
                         }
@@ -153,26 +154,28 @@ fun BuyerRegisterScreen(
                         OutlinedTextField(
                             value = uiState.email,
                             onValueChange = { viewModel.onEmailChange(it) },
-                            label = { Text("Correo Electrónico", fontWeight = FontWeight.Medium) },
+                            label = { Text("Correo Electrónico", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             isError = !isEmailValid,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF2F0EB),
-                                unfocusedContainerColor = Color(0xFFF2F0EB),
-                                focusedBorderColor = if (isEmailValid && uiState.email.isNotEmpty()) VerdeMatcha else RojoGochujang,
+                                focusedContainerColor = SuperficieCampo,
+                                unfocusedContainerColor = SuperficieCampo,
+                                focusedBorderColor = if (isEmailValid && uiState.email.isNotEmpty()) VerdeMatcha else RojoAlerta,
                                 unfocusedBorderColor = if (isEmailValid && uiState.email.isNotEmpty()) VerdeMatcha.copy(alpha = 0.5f) else BordeSuave,
-                                cursorColor = RojoGochujang,
+                                cursorColor = NaranjaCercania,
                                 focusedLabelColor = TextoPrincipal
                             )
                         )
                         if (!isEmailValid) {
                             Text(
                                 text = "Ingresa un formato de correo válido",
-                                color = Color(0xFFB71C1C),
+                                color = RojoAlerta,
                                 fontSize = 12.sp,
+                                fontFamily = Nunito,
                                 modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                             )
                         }
@@ -182,13 +185,14 @@ fun BuyerRegisterScreen(
                         OutlinedTextField(
                             value = uiState.password,
                             onValueChange = { viewModel.onPasswordChange(it) },
-                            label = { Text("Contraseña", fontWeight = FontWeight.Medium) },
+                            label = { Text("Contraseña", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             isError = showPasswordChecklist && !passwordCheck.isValid,
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
@@ -198,11 +202,11 @@ fun BuyerRegisterScreen(
                                 }
                             },
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF2F0EB),
-                                unfocusedContainerColor = Color(0xFFF2F0EB),
-                                focusedBorderColor = if (passwordCheck.isValid) VerdeMatcha else RojoGochujang,
+                                focusedContainerColor = SuperficieCampo,
+                                unfocusedContainerColor = SuperficieCampo,
+                                focusedBorderColor = if (passwordCheck.isValid) VerdeMatcha else RojoAlerta,
                                 unfocusedBorderColor = if (passwordCheck.isValid) VerdeMatcha.copy(alpha = 0.5f) else BordeSuave,
-                                cursorColor = RojoGochujang,
+                                cursorColor = NaranjaCercania,
                                 focusedLabelColor = TextoPrincipal
                             )
                         )
@@ -223,7 +227,7 @@ fun BuyerRegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Footer con botón degradado e interruptores legales
+            // Footer con botón e interruptores legales
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -237,18 +241,20 @@ fun BuyerRegisterScreen(
                     Checkbox(
                         checked = uiState.acceptedTerms,
                         onCheckedChange = { viewModel.onAcceptedTermsChange(it) },
-                        colors = CheckboxDefaults.colors(checkedColor = RojoGochujang)
+                        colors = CheckboxDefaults.colors(checkedColor = NaranjaCercania)
                     )
                     Text(
                         text = "Acepto los ",
                         fontSize = 14.sp,
+                        fontFamily = Nunito,
                         color = TextoSecundario
                     )
                     Text(
                         text = "Términos y Condiciones",
                         fontSize = 14.sp,
+                        fontFamily = Nunito,
                         fontWeight = FontWeight.Bold,
-                        color = RojoGochujang,
+                        color = NaranjaCercania,
                         modifier = Modifier.clickable { showTerms = true }
                     )
                 }
@@ -266,6 +272,8 @@ fun BuyerRegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Botón sólido en Naranja Cercanía, sin degradado — consistente con el resto
+                // de botones primarios de la app (flat, no gradientes).
                 Button(
                     onClick = { viewModel.registerBuyer(onRegistrationComplete) },
                     enabled = uiState.name.isNotBlank() &&
@@ -274,18 +282,12 @@ fun BuyerRegisterScreen(
                             passwordCheck.isValid && !uiState.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(RojoGochujang, Color(0xFFE65100))
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
+                        .height(58.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color(0xFFE0E0E0)
+                        containerColor = NaranjaCercania,
+                        disabledContainerColor = NaranjaCercania.copy(alpha = 0.35f)
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     if (uiState.isLoading) {
@@ -298,6 +300,7 @@ fun BuyerRegisterScreen(
                         Text(
                             text = "Finalizar y Buscar Comida",
                             fontSize = 16.sp,
+                            fontFamily = Baloo2,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -306,7 +309,7 @@ fun BuyerRegisterScreen(
             }
         }
 
-        // Alerta flotante Premium para manejo de Errores globales
+        // Alerta flotante para manejo de errores globales
         AnimatedVisibility(
             visible = uiState.error != null,
             enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
@@ -317,7 +320,7 @@ fun BuyerRegisterScreen(
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -325,12 +328,13 @@ fun BuyerRegisterScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Error, contentDescription = null, tint = RojoGochujang)
+                    Icon(Icons.Default.Error, contentDescription = null, tint = RojoAlerta)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = uiState.error ?: "",
-                        color = Color(0xFFB71C1C),
+                        color = RojoAlerta,
                         fontSize = 14.sp,
+                        fontFamily = Nunito,
                         fontWeight = FontWeight.SemiBold
                     )
                 }

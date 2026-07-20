@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -16,11 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +33,7 @@ import com.labajada.app.core.ui.helpers.calcularNivelInsignia
 import com.labajada.app.presentation.buyer.search.RadarHuarique
 import com.labajada.app.presentation.buyer.search.BuyerSearchViewModel
 import com.labajada.app.presentation.shared.others.ImageDimens
+import com.labajada.app.presentation.shared.theme.*
 
 @Composable
 fun HuariquesRadarCarousel(
@@ -45,10 +46,9 @@ fun HuariquesRadarCarousel(
     val favoritosIds = remember(favoritos) { favoritos.map { it.restaurantId }.toSet() }
 
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         items(huariquesRadar, key = { it.id }) { huarique ->
             val isFavorite = favoritosIds.contains(huarique.id)
@@ -63,22 +63,19 @@ fun HuariquesRadarCarousel(
 
             Card(
                 modifier = Modifier
-                    .width(220.dp)
-                    .alpha(if (huarique.isOpen) 1f else 0.55f)
+                    .width(185.dp)
+                    .alpha(if (huarique.isOpen) 1f else 0.6f)
                     .clickable {
                         cameraPositionState.position = CameraPosition.fromLatLngZoom(
                             LatLng(huarique.latitud, huarique.longitud), 18.0f
                         )
                     },
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, BordeSuave),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-
-//                    Banner de imagen: mismo ratio que la portada del restaurante
-//                    (ImageDimens.RESTAURANT_COVER_RATIO), para que se vea completa
-//                    y consistente con lo que el dueño subió como foto de portada.
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -89,41 +86,62 @@ fun HuariquesRadarCarousel(
                                 model = huarique.imageUrl,
                                 contentDescription = huarique.nombre,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+                                modifier = Modifier.fillMaxSize()
                             )
                         } else {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                                    .background(Color(0xFFF5F5F5)),
+                                    .background(SuperficieCampo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.TableRestaurant,
                                     contentDescription = null,
-                                    tint = Color(0xFFBDBDBD),
-                                    modifier = Modifier.size(32.dp)
+                                    tint = TextoSecundario,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
 
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.8f)
+                                        )
+                                    )
+                                )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                        ) {
+                            RestaurantBadgeChip(nivelInsignia)
+                        }
+
                         if (!huarique.isOpen) {
-                            Card(
+                            Surface(
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                                shape = RoundedCornerShape(8.dp)
+                                    .padding(start = 8.dp, top = 36.dp),
+                                color = Color(0xFFFFEBEE),
+                                shape = CircleShape
                             ) {
                                 Text(
                                     text = "Cerrado",
-                                    fontSize = 10.sp,
+                                    fontSize = 9.sp,
+                                    fontFamily = Nunito,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFC62828),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    color = RojoAlerta,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
                             }
                         }
@@ -143,55 +161,71 @@ fun HuariquesRadarCarousel(
                             },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
-                                .size(30.dp)
+                                .padding(8.dp)
+                                .background(Color.White, CircleShape)
+                                .size(32.dp)
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = "Favorito",
-                                tint = if (isFavorite) Color(0xFFD32F2F) else Color.Gray,
-                                modifier = Modifier.size(18.dp)
+                                tint = if (isFavorite) RojoGochujang else TextoSecundario,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                    }
 
-                    // Info debajo del banner
-                    Column(modifier = Modifier.padding(12.dp)) {
                         Text(
                             text = huarique.nombre,
                             fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF212121),
+                            fontFamily = Baloo2,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
                         )
+                    }
 
-                        RestaurantBadgeChip(nivelInsignia)
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
                         Text(
                             text = "${huarique.distancia} • ${huarique.category}",
                             fontSize = 12.sp,
-                            color = Color(0xFF757575),
-                            fontWeight = FontWeight.Medium,
+                            fontFamily = Nunito,
+                            color = TextoSecundario,
+                            fontWeight = FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = if (huarique.isOpen) "Ver menú" else "No disponible por el momento",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (huarique.isOpen) Color(0xFFD32F2F) else Color.LightGray,
-                            textDecoration = if (huarique.isOpen) TextDecoration.Underline else TextDecoration.None,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.clickable(enabled = huarique.isOpen) { onVerMenu(huarique) }
-                        )
+                        Button(
+                            onClick = { onVerMenu(huarique) },
+                            enabled = huarique.isOpen,
+                            contentPadding = PaddingValues(vertical = 0.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(36.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = RojoGochujang,
+                                disabledContainerColor = SuperficieCampo,
+                                disabledContentColor = TextoSecundario
+                            )
+                        ) {
+                            Text(
+                                text = if (huarique.isOpen) "Ver menú" else "No disponible",
+                                fontSize = 13.sp,
+                                fontFamily = Nunito,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
