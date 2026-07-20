@@ -74,14 +74,7 @@ class RestaurantRegisterViewModel(
         return true
     }
 
-    private fun validateDocuments(): Boolean {
-        val state = _uiState.value
-        if (state.storePhotoUrl == null) {
-            _uiState.update { it.copy(error = "Sube al menos una foto de tu local o puesto.") }
-            return false
-        }
-        return true
-    }
+    private fun validateDocuments(): Boolean = true
 
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, error = null) }
     fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value, error = null) }
@@ -113,11 +106,6 @@ class RestaurantRegisterViewModel(
 
     fun registerRestaurant(onComplete: () -> Unit) {
         val state = _uiState.value
-
-        if (!state.acceptedTerms) {
-            _uiState.update { it.copy(error = "Debes aceptar los Términos y Condiciones para continuar.") }
-            return
-        }
 
         if (state.ownerFullName.isBlank() || state.email.isBlank() || state.password.isBlank() || state.confirmPassword.isBlank()) {
             _uiState.update { it.copy(error = "Completa todos los campos.") }

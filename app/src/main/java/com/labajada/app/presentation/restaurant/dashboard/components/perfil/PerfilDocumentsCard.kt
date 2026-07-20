@@ -30,6 +30,7 @@ import com.labajada.app.presentation.restaurant.dashboard.onProfileMenuPhotoSele
 import com.labajada.app.presentation.restaurant.dashboard.onProfilePermitPhotoSelected
 import com.labajada.app.presentation.restaurant.dashboard.onProfileStorePhotoSelected
 import com.labajada.app.presentation.restaurant.register.components.RestaurantImagePicker
+import com.labajada.app.presentation.shared.others.ImageDimens
 
 /**
  * Tarjeta expandible de documentos de verificación (foto de local, carta/menú, permiso
@@ -107,6 +108,8 @@ fun PerfilDocumentsCard(
                     RestaurantImagePicker(
                         label = "Foto de tu local o puesto",
                         imageUrl = state.resStorePhotoUrl,
+                        aspectRatioX = ImageDimens.STORE_PHOTO_RATIO_X,
+                        aspectRatioY = ImageDimens.STORE_PHOTO_RATIO_Y,
                         enabled = !documentsLocked,
                         confirmChangeMessage = "Esta foto ya fue enviada a revisión. Si la cambias, tu insignia desaparecerá temporalmente hasta que se vuelva a verificar.",
                         onImageSelected = { uri -> viewModel.onProfileStorePhotoSelected(context, uri?.let { Uri.parse(it) }) }
@@ -114,6 +117,8 @@ fun PerfilDocumentsCard(
                     RestaurantImagePicker(
                         label = "Foto de tu carta o menú (opcional)",
                         imageUrl = state.resMenuPhotoUrl,
+                        aspectRatioX = ImageDimens.MENU_BOARD_RATIO_Y,
+                        aspectRatioY = ImageDimens.MENU_BOARD_RATIO_X,
                         enabled = !documentsLocked,
                         confirmChangeMessage = "Esta foto ya fue enviada a revisión. Si la cambias, tu insignia desaparecerá temporalmente hasta que se vuelva a verificar.",
                         onImageSelected = { uri -> viewModel.onProfileMenuPhotoSelected(context, uri?.let { Uri.parse(it) }) }
@@ -130,6 +135,8 @@ fun PerfilDocumentsCard(
                     RestaurantImagePicker(
                         label = "Foto de tu permiso municipal (opcional)",
                         imageUrl = state.resPermitPhotoUrl,
+                        aspectRatioX = ImageDimens.PERMIT_RATIO_X,
+                        aspectRatioY = ImageDimens.PERMIT_RATIO_Y,
                         enabled = !documentsLocked,
                         confirmChangeMessage = "Este documento ya está en revisión o validado. Si lo cambias, tu insignia desaparecerá temporalmente hasta que se vuelva a verificar. Solo cámbialo si tu permiso venció o ya no es válido.",
                         onImageSelected = { uri -> viewModel.onProfilePermitPhotoSelected(context, uri?.let { Uri.parse(it) }) }

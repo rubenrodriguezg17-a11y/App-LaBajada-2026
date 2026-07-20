@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,10 +53,34 @@ private fun DishFormContent(
     onSave: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val croppedUri = result.data?.let { com.yalantis.ucrop.UCrop.getOutput(it) }
+            viewModel.onDishImageChange(croppedUri)
+        }
+    }
+
     val pickMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        viewModel.onDishImageChange(uri)
+        if (uri != null) {
+            val destinationFile = java.io.File(context.cacheDir, "plato_recortado_${System.currentTimeMillis()}.jpg")
+            val destinationUri = androidx.core.content.FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", destinationFile
+            )
+            val intent = com.yalantis.ucrop.UCrop.of(uri, destinationUri)
+                .withAspectRatio(
+                    com.labajada.app.presentation.shared.others.ImageDimens.DISH_PHOTO_RATIO_X,
+                    com.labajada.app.presentation.shared.others.ImageDimens.DISH_PHOTO_RATIO_Y
+                )
+                .withMaxResultSize(1200, 1200)
+                .getIntent(context)
+            cropLauncher.launch(intent)
+        }
     }
 
     Column(

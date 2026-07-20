@@ -89,13 +89,6 @@ fun RestaurantDashboardViewModel.onProfileImageSelected(context: Context, uri: U
     guardarDatosDelLocal()
 }
 
-fun RestaurantDashboardViewModel.onProfileImageCropped(context: Context, bitmap: android.graphics.Bitmap) {
-    val fileName = "portada_${System.currentTimeMillis()}.jpg"
-    val finalPath = com.labajada.app.core.utils.saveBitmapToInternalStorage(context, bitmap, fileName)
-        ?: return
-    _uiState.update { it.copy(resImageUrl = finalPath) }
-    guardarDatosDelLocal()
-}
 fun RestaurantDashboardViewModel.toggleIsOpen() {
     val newValue = !_uiState.value.resIsOpen
     _uiState.update { it.copy(resIsOpen = newValue) }

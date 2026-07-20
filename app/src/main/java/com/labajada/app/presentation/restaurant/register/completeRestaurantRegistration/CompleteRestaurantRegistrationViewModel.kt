@@ -93,15 +93,6 @@ class CompleteRestaurantRegistrationViewModel(
     fun completeRegistration(onComplete: () -> Unit) {
         val state = _uiState.value
 
-        if (state.storePhotoUrl == null) {
-            _uiState.update { it.copy(error = "Sube al menos una foto de tu local o puesto.") }
-            return
-        }
-        if (!state.acceptedTerms) {
-            _uiState.update { it.copy(error = "Debes aceptar los Términos y Condiciones para continuar.") }
-            return
-        }
-
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 

@@ -29,7 +29,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -104,18 +103,20 @@ fun LoginScreen(
                     .padding(top = 56.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Bienvenida: verde domina la pantalla de login (calma/confianza), el rojo
+                // queda reservado solo para el wordmark y acentos puntuales.
                 Text(
                     text = "La Bajada",
-                    fontSize = 48.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Black,
+                    fontSize = 46.sp,
+                    fontFamily = Bangers,
                     color = RojoGochujang,
-                    letterSpacing = (-1.5).sp
+                    letterSpacing = 0.3.sp
                 )
                 Text(
                     text = "¡Qué bueno verte de nuevo!",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
+                    fontFamily = Nunito,
+                    fontWeight = FontWeight.Normal,
                     color = TextoSecundario,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -130,6 +131,7 @@ fun LoginScreen(
                 Text(
                     text = "Ingresa tus credenciales",
                     fontSize = 18.sp,
+                    fontFamily = Baloo2,
                     fontWeight = FontWeight.Bold,
                     color = TextoPrincipal
                 )
@@ -137,19 +139,20 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = { viewModel.onEmailChange(it) },
-                    label = { Text("Correo Electrónico", fontWeight = FontWeight.Medium) },
+                    label = { Text("Correo Electrónico", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                     leadingIcon = { Icon(Icons.Outlined.Email, null, modifier = Modifier.size(20.dp)) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     enabled = !uiState.isLoading && !isGoogleLoading,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF2F0EB),
-                        unfocusedContainerColor = Color(0xFFF2F0EB),
-                        focusedBorderColor = if (isEmailValid) VerdeMatcha else RojoGochujang,
+                        focusedContainerColor = SuperficieCampo,
+                        unfocusedContainerColor = SuperficieCampo,
+                        focusedBorderColor = if (isEmailValid) VerdeMatcha else RojoAlerta,
                         unfocusedBorderColor = if (isEmailValid) VerdeMatcha.copy(alpha = 0.5f) else BordeSuave,
-                        cursorColor = RojoGochujang,
+                        cursorColor = VerdeMatcha,
                         focusedLabelColor = TextoPrincipal
                     )
                 )
@@ -157,7 +160,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = { viewModel.onPasswordChange(it) },
-                    label = { Text("Contraseña", fontWeight = FontWeight.Medium) },
+                    label = { Text("Contraseña", fontFamily = Nunito, fontWeight = FontWeight.SemiBold) },
                     leadingIcon = { Icon(Icons.Outlined.Lock, null, modifier = Modifier.size(20.dp)) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -169,17 +172,18 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     enabled = !uiState.isLoading && !isGoogleLoading,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = Nunito),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF2F0EB),
-                        unfocusedContainerColor = Color(0xFFF2F0EB),
-                        focusedBorderColor = if (isPasswordValid) VerdeMatcha else RojoGochujang,
+                        focusedContainerColor = SuperficieCampo,
+                        unfocusedContainerColor = SuperficieCampo,
+                        focusedBorderColor = if (isPasswordValid) VerdeMatcha else RojoAlerta,
                         unfocusedBorderColor = if (isPasswordValid) VerdeMatcha.copy(alpha = 0.5f) else BordeSuave,
-                        cursorColor = RojoGochujang,
+                        cursorColor = VerdeMatcha,
                         focusedLabelColor = TextoPrincipal
                     )
                 )
@@ -187,8 +191,9 @@ fun LoginScreen(
                 Text(
                     text = "¿Olvidaste tu contraseña?",
                     fontSize = 13.sp,
+                    fontFamily = Nunito,
                     fontWeight = FontWeight.SemiBold,
-                    color = RojoGochujang,
+                    color = VerdeMatcha,
                     textAlign = TextAlign.End,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -203,23 +208,19 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Botón primario en Verde Matcha sólido: login es el momento de "confía en
+                // nosotros", no el de "antojo" — el rojo de apetito se reserva para explorar/comprar.
                 Button(
                     onClick = { viewModel.login(onLoginSuccess, onNeedsEmailVerification) },
                     enabled = isEmailValid && isPasswordValid && !uiState.isLoading && !isGoogleLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(58.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(RojoGochujang, Color(0xFFE65100))
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
+                        .height(58.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color(0xFFE0E0E0)
+                        containerColor = VerdeMatcha,
+                        disabledContainerColor = VerdeMatcha.copy(alpha = 0.35f)
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     if (uiState.isLoading) {
@@ -232,6 +233,7 @@ fun LoginScreen(
                         Text(
                             "Iniciar Sesión",
                             fontSize = 16.sp,
+                            fontFamily = Baloo2,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -241,13 +243,14 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = BordeSuave)
                     Text(
                         text = "  o  ",
                         fontSize = 13.sp,
-                        color = Color(0xFF9E9E9E)
+                        fontFamily = Nunito,
+                        color = TextoSecundario
                     )
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE0E0E0))
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = BordeSuave)
                 }
 
                 // Hueco invisible que reserva el espacio del botón de Google.
@@ -267,10 +270,11 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("¿No tienes cuenta? ", fontSize = 14.sp, color = TextoSecundario)
+                    Text("¿No tienes cuenta? ", fontSize = 14.sp, fontFamily = Nunito, color = TextoSecundario)
                     Text(
                         "Regístrate aquí",
                         fontSize = 14.sp,
+                        fontFamily = Nunito,
                         fontWeight = FontWeight.Bold,
                         color = RojoGochujang,
                         modifier = Modifier.clickable { onNavigateToOnboarding() }
@@ -279,6 +283,8 @@ fun LoginScreen(
             }
         }
 
+        // Botón de Google: negro sólido, tal como ya estaba — es exactamente el uso de
+        // negro "de alto peso" que define el sistema (acción secundaria importante, no marca).
         if (googleButtonSizePx != IntSize.Zero) {
             Button(
                 onClick = {
@@ -313,10 +319,10 @@ fun LoginScreen(
                         height = with(density) { googleButtonSizePx.height.toDp() }
                     ),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    disabledContainerColor = Color(0xFF1A1A1A)
+                    containerColor = NegroContorno,
+                    disabledContainerColor = NegroContorno.copy(alpha = 0.55f)
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(10.dp)
             ) {
                 if (googleButtonBusy) {
                     CircularProgressIndicator(
@@ -325,7 +331,7 @@ fun LoginScreen(
                         strokeWidth = 2.5.dp
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Conectando con Google...", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Conectando con Google...", fontSize = 15.sp, fontFamily = Baloo2, fontWeight = FontWeight.Bold, color = Color.White)
                 } else {
                     Box(
                         modifier = Modifier
@@ -340,7 +346,7 @@ fun LoginScreen(
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("Continuar con Google", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Continuar con Google", fontSize = 15.sp, fontFamily = Baloo2, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -354,8 +360,8 @@ fun LoginScreen(
                 .padding(top = 20.dp, start = 20.dp, end = 20.dp)
         ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF)),
+                shape = RoundedCornerShape(14.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -363,12 +369,13 @@ fun LoginScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Error, contentDescription = null, tint = RojoGochujang)
+                    Icon(Icons.Default.Error, contentDescription = null, tint = RojoAlerta)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = uiState.errorMessage ?: "",
-                        color = Color(0xFFB71C1C),
+                        color = RojoAlerta,
                         fontSize = 14.sp,
+                        fontFamily = Nunito,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -380,9 +387,9 @@ fun LoginScreen(
         ModalBottomSheet(
             onDismissRequest = { viewModel.dismissRoleSelector() },
             sheetState = sheetState,
-            containerColor = Color.White.copy(alpha = 0.95f),
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-            tonalElevation = 10.dp
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            tonalElevation = 0.dp
         ) {
             Column(
                 modifier = Modifier
@@ -401,49 +408,51 @@ fun LoginScreen(
 
                 Text(
                     "¿Cómo quieres entrar hoy?",
-                    fontSize = 22.sp,
-                    fontFamily = FontFamily.Serif,
+                    fontSize = 21.sp,
+                    fontFamily = Baloo2,
                     fontWeight = FontWeight.Bold,
                     color = TextoPrincipal
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Comensal → Naranja Cercanía (mismo color que el resto del flujo comprador)
                 Surface(
                     onClick = { viewModel.selectRole("BUYER") },
                     shape = RoundedCornerShape(20.dp),
                     color = Color.White,
-                    border = BordeSuave.let { ButtonDefaults.outlinedButtonBorder },
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NaranjaCercania.copy(alpha = 0.4f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Restaurant, null, tint = OroLiquido, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.Restaurant, null, tint = NaranjaCercania, modifier = Modifier.size(28.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("Entrar como Comensal", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text("Buscar la mejor comida cerca de ti", color = TextoSecundario, fontSize = 13.sp)
+                            Text("Entrar como Comensal", fontFamily = Baloo2, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("Buscar la mejor comida cerca de ti", fontFamily = Nunito, color = TextoSecundario, fontSize = 13.sp)
                         }
                     }
                 }
 
+                // Restaurante → Marrón Sazón (identidad del lado negocio, no gris genérico)
                 Surface(
                     onClick = { viewModel.selectRole("RESTAURANT") },
                     shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFF263238),
+                    color = MarronSazon,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.SoupKitchen, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.SoupKitchen, null, tint = DoradoTostado, modifier = Modifier.size(28.dp))
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("Gestionar mi Restaurante", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-                            Text("Administrar pedidos y menú", color = Color.White.copy(0.7f), fontSize = 13.sp)
+                            Text("Gestionar mi Restaurante", fontFamily = Baloo2, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                            Text("Administrar pedidos y menú", fontFamily = Nunito, color = Color.White.copy(0.75f), fontSize = 13.sp)
                         }
                     }
                 }

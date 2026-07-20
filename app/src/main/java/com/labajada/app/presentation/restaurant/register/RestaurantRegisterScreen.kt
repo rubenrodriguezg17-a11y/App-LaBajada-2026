@@ -4,13 +4,13 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +22,8 @@ import com.labajada.app.presentation.restaurant.register.components.RegisterCred
 import com.labajada.app.presentation.restaurant.register.components.RegisterDocumentsStep
 import com.labajada.app.presentation.restaurant.register.components.RegisterLocationStep
 import com.labajada.app.presentation.restaurant.register.components.RegisterStepIndicator
+import com.labajada.app.presentation.shared.legal.TermsAndConditionsDialog
+import com.labajada.app.presentation.shared.theme.*
 
 @Composable
 fun RestaurantRegisterScreen(
@@ -30,31 +32,14 @@ fun RestaurantRegisterScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White)
             .padding(24.dp)
     ) {
-        Text(
-            text = "Registra tu Huarique",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF263238),
-            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
-        )
-        Text(
-            text = "Únete a La Bajada y gestiona tus pedidos al toque",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        RegisterStepIndicator(currentStep = state.currentStep, totalSteps = 4)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -73,12 +58,14 @@ fun RestaurantRegisterScreen(
                         phoneNumber = state.phoneNumber,
                         selectedCategory = state.selectedCategory,
                         expandedCategory = state.expandedCategory,
+                        businessHours = state.businessHours,
                         onNameChange = viewModel::onNameChange,
                         onDocumentTypeChange = viewModel::onDocumentTypeChange,
                         onDocumentNumberChange = viewModel::onDocumentNumberChange,
                         onPhoneChange = viewModel::onPhoneChange,
                         onCategorySelected = viewModel::onCategorySelected,
-                        onToggleCategoryDropdown = viewModel::toggleCategoryDropdown
+                        onToggleCategoryDropdown = viewModel::toggleCategoryDropdown,
+                        onBusinessHoursChange = viewModel::onBusinessHoursChange
                     )
                     2 -> RegisterLocationStep(
                         addressDetails = state.addressDetails,
@@ -86,11 +73,9 @@ fun RestaurantRegisterScreen(
                         offersDelivery = state.offersDelivery,
                         maxDeliveryDistanceKm = state.maxDeliveryDistanceKm,
                         imageUrl = state.imageUrl,
-                        businessHours = state.businessHours,
                         onAddressChange = viewModel::onAddressChange,
                         onOpenMapDialog = { viewModel.toggleMapDialog(true) },
-                        onImageSelected = viewModel::onImageSelected,
-                        onBusinessHoursChange = viewModel::onBusinessHoursChange
+                        onImageSelected = viewModel::onImageSelected
                     )
                     3 -> RegisterDocumentsStep(
                         storePhotoUrl = state.storePhotoUrl,
@@ -105,12 +90,10 @@ fun RestaurantRegisterScreen(
                         email = state.email,
                         password = state.password,
                         confirmPassword = state.confirmPassword,
-                        acceptedTerms = state.acceptedTerms,
                         onOwnerFullNameChange = viewModel::onOwnerFullNameChange,
                         onEmailChange = viewModel::onEmailChange,
                         onPasswordChange = viewModel::onPasswordChange,
-                        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
-                        onAcceptedTermsChange = viewModel::onAcceptedTermsChange
+                        onConfirmPasswordChange = viewModel::onConfirmPasswordChange
                     )
                 }
             }
@@ -119,8 +102,9 @@ fun RestaurantRegisterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = state.error ?: "",
-                    color = Color(0xFFD32F2F),
+                    color = RojoAlerta,
                     fontSize = 13.sp,
+                    fontFamily = Nunito,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -135,41 +119,40 @@ fun RestaurantRegisterScreen(
             if (state.currentStep > 1) {
                 OutlinedButton(
                     onClick = { viewModel.previousStep() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MarronSazon),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BordeCalidoRestaurante)
                 ) {
-                    Text("Atrás", fontWeight = FontWeight.Bold)
+                    Text("Atrás", fontFamily = Baloo2, fontWeight = FontWeight.Bold)
                 }
             }
 
             Button(
                 onClick = {
-                    if (state.currentStep < 4) {
-                        viewModel.nextStep()
-                    } else {
-                        viewModel.registerRestaurant(onRegistrationComplete)
+                    when (state.currentStep) {
+                        4 -> showTermsDialog = true
+                        else -> viewModel.nextStep()
                     }
                 },
-                modifier = Modifier
-                    .weight(2f)
-                    .height(52.dp),
+                modifier = Modifier.weight(2f).height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF263238),
-                    disabledContainerColor = Color(0xFFCFD8DC)
+                    containerColor = DoradoTostado,
+                    disabledContainerColor = DoradoTostado.copy(alpha = 0.35f)
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 enabled = !state.isLoading
             ) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = MarronSazon, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(
-                        text = if (state.currentStep < 4) "Siguiente" else "Registrar Comercio",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+                    val label = when (state.currentStep) {
+                        2 -> "Continuar"
+                        3 -> "Omitir"
+                        4 -> "Terminar"
+                        else -> "Siguiente"
+                    }
+                    Text(text = label, fontFamily = Baloo2, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MarronSazon)
                 }
             }
         }
@@ -187,6 +170,17 @@ fun RestaurantRegisterScreen(
                 viewModel.onOffersDeliveryChange(offersDelivery)
                 viewModel.onMaxDeliveryDistanceChange(radiusKm)
                 viewModel.toggleMapDialog(false)
+            }
+        )
+    }
+
+    if (showTermsDialog) {
+        TermsAndConditionsDialog(
+            isSeller = true,
+            onDismiss = { showTermsDialog = false },
+            onAccept = {
+                showTermsDialog = false
+                viewModel.registerRestaurant(onRegistrationComplete)
             }
         )
     }

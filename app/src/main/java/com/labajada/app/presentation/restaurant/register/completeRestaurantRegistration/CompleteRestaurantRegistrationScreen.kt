@@ -16,7 +16,7 @@ import com.labajada.app.presentation.restaurant.register.components.DeliveryRadi
 import com.labajada.app.presentation.restaurant.register.components.RegisterBusinessInfoStep
 import com.labajada.app.presentation.restaurant.register.components.RegisterDocumentsStep
 import com.labajada.app.presentation.restaurant.register.components.RegisterLocationStep
-import com.labajada.app.presentation.restaurant.register.components.TermsAcceptanceRow
+import com.labajada.app.presentation.shared.legal.TermsAndConditionsDialog
 
 @Composable
 fun CompleteRestaurantRegistrationScreen(
@@ -27,6 +27,7 @@ fun CompleteRestaurantRegistrationScreen(
     val state by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     var showExitConfirm by remember { mutableStateOf(false) }
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     BackHandler {
         if (state.currentStep > 1) {
@@ -62,20 +63,8 @@ fun CompleteRestaurantRegistrationScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Text(
-            text = "¡Ya casi terminamos!",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF263238),
-            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
-        )
-        Text(
-            text = "Cuéntanos sobre tu negocio para activarlo en La Bajada",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(modifier = Modifier.weight(1f).verticalScroll(scrollState)) {
             when (state.currentStep) {
@@ -86,12 +75,14 @@ fun CompleteRestaurantRegistrationScreen(
                     phoneNumber = state.phoneNumber,
                     selectedCategory = state.selectedCategory,
                     expandedCategory = state.expandedCategory,
+                    businessHours = state.businessHours,
                     onNameChange = viewModel::onNameChange,
                     onDocumentTypeChange = viewModel::onDocumentTypeChange,
                     onDocumentNumberChange = viewModel::onDocumentNumberChange,
                     onPhoneChange = viewModel::onPhoneChange,
                     onCategorySelected = viewModel::onCategorySelected,
-                    onToggleCategoryDropdown = viewModel::toggleCategoryDropdown
+                    onToggleCategoryDropdown = viewModel::toggleCategoryDropdown,
+                    onBusinessHoursChange = viewModel::onBusinessHoursChange
                 )
                 2 -> RegisterLocationStep(
                     addressDetails = state.addressDetails,
@@ -99,26 +90,18 @@ fun CompleteRestaurantRegistrationScreen(
                     offersDelivery = state.offersDelivery,
                     maxDeliveryDistanceKm = state.maxDeliveryDistanceKm,
                     imageUrl = state.imageUrl,
-                    businessHours = state.businessHours,
                     onAddressChange = viewModel::onAddressChange,
                     onOpenMapDialog = { viewModel.toggleMapDialog(true) },
-                    onImageSelected = viewModel::onImageSelected,
-                    onBusinessHoursChange = viewModel::onBusinessHoursChange
+                    onImageSelected = viewModel::onImageSelected
                 )
-                3 -> Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    RegisterDocumentsStep(
-                        storePhotoUrl = state.storePhotoUrl,
-                        menuPhotoUrl = state.menuPhotoUrl,
-                        permitPhotoUrl = state.permitPhotoUrl,
-                        onStorePhotoSelected = viewModel::onStorePhotoSelected,
-                        onMenuPhotoSelected = viewModel::onMenuPhotoSelected,
-                        onPermitPhotoSelected = viewModel::onPermitPhotoSelected
-                    )
-                    TermsAcceptanceRow(
-                        acceptedTerms = state.acceptedTerms,
-                        onAcceptedTermsChange = viewModel::onAcceptedTermsChange
-                    )
-                }
+                3 -> RegisterDocumentsStep(
+                    storePhotoUrl = state.storePhotoUrl,
+                    menuPhotoUrl = state.menuPhotoUrl,
+                    permitPhotoUrl = state.permitPhotoUrl,
+                    onStorePhotoSelected = viewModel::onStorePhotoSelected,
+                    onMenuPhotoSelected = viewModel::onMenuPhotoSelected,
+                    onPermitPhotoSelected = viewModel::onPermitPhotoSelected
+                )
             }
 
             if (state.error != null) {
@@ -141,18 +124,25 @@ fun CompleteRestaurantRegistrationScreen(
             }
             Button(
                 onClick = {
-                    if (state.currentStep < 3) viewModel.nextStep()
-                    else viewModel.completeRegistration(onComplete)
+                    when (state.currentStep) {
+                        3 -> showTermsDialog = true
+                        else -> viewModel.nextStep()
+                    }
                 },
                 modifier = Modifier.weight(2f).height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF263238)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B4332)),
                 shape = RoundedCornerShape(12.dp),
                 enabled = !state.isLoading
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text(if (state.currentStep < 3) "Siguiente" else "Activar mi negocio", fontWeight = FontWeight.Bold)
+                    val label = when (state.currentStep) {
+                        2 -> "Continuar"
+                        3 -> "Omitir"
+                        else -> "Siguiente"
+                    }
+                    Text(text = label, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -170,6 +160,17 @@ fun CompleteRestaurantRegistrationScreen(
                 viewModel.onOffersDeliveryChange(offersDelivery)
                 viewModel.onMaxDeliveryDistanceChange(radiusKm)
                 viewModel.toggleMapDialog(false)
+            }
+        )
+    }
+
+    if (showTermsDialog) {
+        TermsAndConditionsDialog(
+            isSeller = true,
+            onDismiss = { showTermsDialog = false },
+            onAccept = {
+                showTermsDialog = false
+                viewModel.completeRegistration(onComplete)
             }
         )
     }

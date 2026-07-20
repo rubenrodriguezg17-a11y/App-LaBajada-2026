@@ -49,7 +49,7 @@ data class RestaurantRegisterState(
                 (!offersDelivery || maxDeliveryDistanceKm > 0)
 
     val isStep3Valid: Boolean
-        get() = storePhotoUrl != null
+        get() = true
 
     val isStep4Valid: Boolean
         get() = email.isNotBlank() && password.isNotBlank() &&

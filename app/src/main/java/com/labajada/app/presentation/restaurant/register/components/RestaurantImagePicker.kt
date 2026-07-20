@@ -1,5 +1,6 @@
 package com.labajada.app.presentation.restaurant.register.components
 
+import android.app.Activity
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,10 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import com.labajada.app.presentation.shared.theme.Bangers
+import com.yalantis.ucrop.UCrop
+import java.io.File
 
 @Composable
 fun RestaurantImagePicker(
@@ -29,15 +35,38 @@ fun RestaurantImagePicker(
     imageUrl: String?,
     enabled: Boolean = true,
     confirmChangeMessage: String? = null,
+    aspectRatioX: Float = 4f,
+    aspectRatioY: Float = 3f,
     onImageSelected: (String?) -> Unit
 ) {
     var showConfirm by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val croppedUri = result.data?.let { UCrop.getOutput(it) }
+            if (croppedUri != null) onImageSelected(croppedUri.toString())
+        } else if (result.resultCode == UCrop.RESULT_ERROR) {
+            val error = result.data?.let { UCrop.getError(it) }
+            android.util.Log.e("RestaurantImagePicker", "Error al recortar imagen", error)
+        }
+    }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            onImageSelected(uri.toString())
+            val destinationFile = File(context.cacheDir, "doc_recortado_${System.currentTimeMillis()}.jpg")
+            val destinationUri = FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", destinationFile
+            )
+            val intent = UCrop.of(uri, destinationUri)
+                .withAspectRatio(aspectRatioX, aspectRatioY)
+                .withMaxResultSize(1600, 1600)
+                .getIntent(context)
+            cropLauncher.launch(intent)
         }
     }
 
@@ -48,7 +77,7 @@ fun RestaurantImagePicker(
         Text(
             text = label,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            fontFamily = Bangers,
             color = Color(0xFF263238)
         )
         if (subtitle != null) {
@@ -62,7 +91,7 @@ fun RestaurantImagePicker(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
+                .aspectRatio(aspectRatioX / aspectRatioY)
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFFF5F5F5))
                 .clickable(enabled = enabled) {

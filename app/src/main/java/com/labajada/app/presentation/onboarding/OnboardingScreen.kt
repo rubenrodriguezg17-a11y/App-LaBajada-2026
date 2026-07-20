@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +18,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,15 +40,17 @@ fun OnboardingScreen(
             contentScale = ContentScale.Crop
         )
 
+        // Overlay cálido (marrón sazón → negro), en vez de negro plano:
+        // mantiene la legibilidad del texto sobre la foto pero sin perder la calidez de marca.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.4f),
-                            Color.Black.copy(alpha = 0.75f),
-                            Color.Black.copy(alpha = 0.95f)
+                            MarronSazon.copy(alpha = 0.35f),
+                            Color.Black.copy(alpha = 0.72f),
+                            Color.Black.copy(alpha = 0.94f)
                         ),
                         startY = 0f
                     )
@@ -68,25 +70,25 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = "La Bajada",
-                    fontSize = 56.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Black,
+                    fontSize = 52.sp,
+                    fontFamily = Bangers,
                     color = Color.White,
-                    letterSpacing = (-1.5).sp
+                    letterSpacing = 0.5.sp
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Box(
                     modifier = Modifier
-                        .background(OroLiquido, shape = RoundedCornerShape(50.dp))
+                        .background(DoradoTostado, shape = RoundedCornerShape(50.dp))
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = "LET'S GOO'",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF1C1E21),
+                        fontFamily = Nunito,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MarronSazon,
                         letterSpacing = 1.5.sp
                     )
                 }
@@ -96,8 +98,8 @@ fun OnboardingScreen(
                 Text(
                     text = "El mapa definitivo de los huariques y bajadas.",
                     fontSize = 18.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = Baloo2,
+                    fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 8.dp)
@@ -108,9 +110,10 @@ fun OnboardingScreen(
                 Text(
                     text = "¡Te damos la bienvenida a la comunidad gastronómica más picante! Descubre sabores auténticos a la vuelta de la esquina o pon a rugir los motores de tu negocio.",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Light,
+                    fontFamily = Nunito,
+                    fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center,
-                    color = Color.White.copy(alpha = 0.75f),
+                    color = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier.padding(horizontal = 12.dp),
                     lineHeight = 22.sp
                 )
@@ -125,27 +128,29 @@ fun OnboardingScreen(
                 Text(
                     text = "¿CUÁL ES TU ROL HOY?",
                     fontSize = 12.sp,
+                    fontFamily = Nunito,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = Color.White.copy(alpha = 0.65f),
                     letterSpacing = 2.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
 
+                // Comprador → acento Naranja Cercanía (accesible, rápido)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(115.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.25f),
-                            shape = RoundedCornerShape(24.dp)
+                            width = 1.5.dp,
+                            color = NaranjaCercania.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(20.dp)
                         )
                         .clickable { onBuyerSelected() },
                     colors = CardDefaults.cardColors(
                         containerColor = Color.White.copy(alpha = 0.08f)
                     ),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -155,7 +160,8 @@ fun OnboardingScreen(
                     ) {
                         Text(
                             text = "Quiero Buscar Comida",
-                            fontSize = 20.sp,
+                            fontSize = 19.sp,
+                            fontFamily = Baloo2,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -163,26 +169,28 @@ fun OnboardingScreen(
                         Text(
                             text = "Encuentra tu bajada al toque cerca de ti.",
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.65f)
+                            fontFamily = Nunito,
+                            color = Color.White.copy(alpha = 0.7f)
                         )
                     }
                 }
 
+                // Restaurante → acento Dorado Tostado (acogedor, artesanal)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(115.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(20.dp))
                         .border(
-                            width = 1.dp,
-                            color = Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(24.dp)
+                            width = 1.5.dp,
+                            color = DoradoTostado.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(20.dp)
                         )
                         .clickable { onRestaurantSelected() },
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.04f)
+                        containerColor = Color.White.copy(alpha = 0.05f)
                     ),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -192,7 +200,8 @@ fun OnboardingScreen(
                     ) {
                         Text(
                             text = "Soy un Restaurante",
-                            fontSize = 20.sp,
+                            fontSize = 19.sp,
+                            fontFamily = Baloo2,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -200,7 +209,8 @@ fun OnboardingScreen(
                         Text(
                             text = "Gestiona tu cocina y recibe nuevos clientes.",
                             fontSize = 13.sp,
-                            color = Color.White.copy(alpha = 0.65f)
+                            fontFamily = Nunito,
+                            color = Color.White.copy(alpha = 0.7f)
                         )
                     }
                 }

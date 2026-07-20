@@ -135,4 +135,12 @@ dependencies {
 
     //fix Edicion De Imagenes dentro de la app
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+
+    // Edicion de Imagenes
+    implementation("com.github.yalantis:ucrop:2.2.11")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
+    // preview
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.compose.ui:ui-tooling-preview")
 }
