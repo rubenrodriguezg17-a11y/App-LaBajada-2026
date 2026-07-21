@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -73,7 +74,11 @@ fun RestaurantDashboardScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+                modifier = Modifier.shadow(elevation = 8.dp)
+            ) {
                 bottomNavItems.forEach { item ->
                     NavigationBarItem(
                         selected = uiState.selectedTab == item.index,
@@ -105,7 +110,7 @@ fun RestaurantDashboardScreen(
                         viewModel.toggleFormSheet(true)
                     },
                     containerColor = CharcoalPremiumColor,
-                    contentColor = WarmOrangeAccent, // El icono y texto resaltan con el color del hambre
+                    contentColor = WarmOrangeAccent,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)

@@ -4,14 +4,13 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.compose.animation.AnimatedVisibility
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -34,9 +35,17 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -45,7 +54,7 @@ import com.labajada.app.presentation.buyer.cart.CartFlightBus
 import com.labajada.app.presentation.buyer.cart.CartViewModel
 import com.labajada.app.presentation.buyer.search.components.*
 import com.labajada.app.presentation.shared.theme.*
-import java.util.Locale
+import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +64,7 @@ fun BuyerSearchScreen(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
+
     val platosEncontrados by searchViewModel.platosEncontrados.collectAsState()
     val huariquesRadar by searchViewModel.huariquesDesdeBaseDeDatos.collectAsState()
     val ultimasBusquedas by searchViewModel.searchHistory.collectAsState()
@@ -65,24 +75,20 @@ fun BuyerSearchScreen(
     var state by remember {
         mutableStateOf(
             BuyerSearchState(
-                hasLocationPermission =
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED ||
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
-                            ) == PackageManager.PERMISSION_GRANTED
+                hasLocationPermission = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
             )
         )
     }
 
     var headerHeightDp by remember { mutableStateOf(120.dp) }
 
-    val ubicacionClienteInicial = remember { LatLng(-8.1116, -79.0287) }
+    val defaultLocation = remember { LatLng(-8.1116, -79.0287) }
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(ubicacionClienteInicial, 17f)
+        position = CameraPosition.fromLatLngZoom(defaultLocation, 16f)
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -90,32 +96,43 @@ fun BuyerSearchScreen(
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        state = state.copy(hasLocationPermission = granted)
+        state = state.copy(
+            hasLocationPermission = granted,
+            // Al conceder el permiso, disparamos automáticamente la primera búsqueda de ubicación.
+            locationTrigger = if (granted) state.locationTrigger + 1 else state.locationTrigger
+        )
     }
 
     val gpsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        state = if (result.resultCode == Activity.RESULT_OK) {
-            state.copy(locationTrigger = state.locationTrigger + 1)
+        if (result.resultCode == Activity.RESULT_OK) {
+            state = state.copy(locationTrigger = state.locationTrigger + 1)
         } else {
-            state.copy(isLoadingLocation = false)
+            state = state.copy(isLoadingLocation = false)
         }
     }
 
     fun abrirIndicacionesGoogleMaps(latitud: Double, longitud: Double) {
-        val uri = "https://www.google.com/maps/dir/?api=1&destination=$latitud,$longitud&travelmode=walking".toUri()
-        val mapIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+        // google.navigation:q=lat,lng&mode=w -> abre Google Maps directo en modo
+        // navegación turn-by-turn a pie (como si el usuario ya hubiera tocado "Iniciar"),
+        // sin pasar por la pantalla de previsualización de ruta.
+        val navigationUri = "google.navigation:q=$latitud,$longitud&mode=w".toUri()
+        val navigationIntent = Intent(Intent.ACTION_VIEW, navigationUri).apply {
             setPackage("com.google.android.apps.maps")
         }
-        if (mapIntent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(mapIntent)
+
+        if (navigationIntent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(navigationIntent)
         } else {
-            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+            // Fallback: si no tiene la app de Maps instalada, cae al navegador
+            // (esto sí abre en modo previsualización, no hay forma de auto-iniciar por web).
+            val webUri = "https://www.google.com/maps/dir/?api=1&destination=$latitud,$longitud&travelmode=walking".toUri()
+            context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
         }
     }
 
-    LaunchedEffect(state.hasLocationPermission) {
+    LaunchedEffect(Unit) {
         if (!state.hasLocationPermission) {
             permissionLauncher.launch(
                 arrayOf(
@@ -123,95 +140,68 @@ fun BuyerSearchScreen(
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             )
+        } else {
+            // Ya tenía el permiso concedido de una sesión anterior: disparamos
+            // la búsqueda de ubicación de una vez, sin esperar a que toque el FAB.
+            state = state.copy(locationTrigger = state.locationTrigger + 1)
         }
     }
 
-    DisposableEffect(state.hasLocationPermission, state.locationTrigger) {
-        var activeCallback: com.google.android.gms.location.LocationCallback? = null
-        var activeFusedClient: com.google.android.gms.location.FusedLocationProviderClient? = null
+    // Fix bug crítico: este efecto es el que realmente conecta el FAB de "Mi ubicación"
+    // (y el permiso recién concedido) con el GPS. Antes locationTrigger se incrementaba
+    // pero nada lo escuchaba.
+    LaunchedEffect(state.locationTrigger, state.hasLocationPermission) {
+        if (!state.hasLocationPermission || state.locationTrigger == 0) return@LaunchedEffect
 
-        if (state.hasLocationPermission) {
-            state = state.copy(isLoadingLocation = true)
-            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 5000
-            ).build()
-            val builder = com.google.android.gms.location.LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest)
-            val client = com.google.android.gms.location.LocationServices.getSettingsClient(context)
-            val task = client.checkLocationSettings(builder.build())
+        state = state.copy(isLoadingLocation = true)
 
-            task.addOnSuccessListener {
-                try {
-                    searchViewModel.rastrearUbicacionActual(context)
-                    val fusedLocationClient =
-                        com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
-                    activeFusedClient = fusedLocationClient
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY, 10_000L
+        ).build()
+        val settingsRequest = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+            .build()
+        val settingsClient = LocationServices.getSettingsClient(context)
 
-                    @android.annotation.SuppressLint("MissingPermission")
-                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                        if (location != null) {
-                            cameraPositionState.position = CameraPosition.fromLatLngZoom(
-                                LatLng(location.latitude, location.longitude), 16.5f
-                            )
-                            state = state.copy(isLoadingLocation = false)
-                        } else {
-                            val callback = object : com.google.android.gms.location.LocationCallback() {
-                                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
-                                    val lastLoc = result.lastLocation
-                                    if (lastLoc != null) {
-                                        cameraPositionState.position =
-                                            CameraPosition.fromLatLngZoom(
-                                                LatLng(lastLoc.latitude, lastLoc.longitude), 16.5f
-                                            )
-                                        state = state.copy(isLoadingLocation = false)
-                                        fusedLocationClient.removeLocationUpdates(this)
-                                    }
-                                }
-                            }
-                            activeCallback = callback
-
-                            @android.annotation.SuppressLint("MissingPermission")
-                            fusedLocationClient.requestLocationUpdates(
-                                locationRequest,
-                                callback,
-                                context.mainLooper
-                            )
-                        }
-                    }.addOnFailureListener { state = state.copy(isLoadingLocation = false) }
-                } catch (e: Exception) {
-                    android.util.Log.e("BuyerSearchScreen", "Error al solicitar ubicacion", e)
-                    state = state.copy(isLoadingLocation = false)
-                }
+        val gpsListo = try {
+            settingsClient.checkLocationSettings(settingsRequest).await()
+            true
+        } catch (e: ResolvableApiException) {
+            try {
+                val intentSenderRequest = IntentSenderRequest.Builder(e.resolution).build()
+                gpsLauncher.launch(intentSenderRequest)
+            } catch (_: Exception) {
+                // No se pudo lanzar el diálogo de activación de GPS; continuamos sin bloquear.
             }
-
-            task.addOnFailureListener { exception ->
-                if (exception is com.google.android.gms.common.api.ResolvableApiException) {
-                    try {
-                        gpsLauncher.launch(
-                            androidx.activity.result.IntentSenderRequest.Builder(
-                                exception.resolution.intentSender
-                            ).build()
-                        )
-                    } catch (e: android.content.IntentSender.SendIntentException) {
-                        android.util.Log.e("BuyerSearchScreen", "Error al lanzar el dialogo de activar GPS", e)
-                        state = state.copy(isLoadingLocation = false)
-                    }
-                } else {
-                    state = state.copy(isLoadingLocation = false)
-                }
-            }
+            false
+        } catch (e: Exception) {
+            false
         }
 
-        onDispose {
-            activeCallback?.let { callback ->
-                activeFusedClient?.removeLocationUpdates(callback)
+        if (gpsListo) {
+            searchViewModel.rastrearUbicacionActual(context) {
+                state = state.copy(isLoadingLocation = false)
             }
+        } else {
+            // Si el GPS estaba apagado, gpsLauncher ya se encargó de pedir que se active;
+            // el resultado de ese diálogo vuelve a incrementar locationTrigger y reintenta.
+            state = state.copy(isLoadingLocation = false)
         }
+    }
+
+    // Mueve la cámara cada vez que la ubicación real del usuario cambia.
+    val userLocation by searchViewModel.userLocation.collectAsState()
+    LaunchedEffect(userLocation) {
+        cameraPositionState.animate(
+            update = CameraUpdateFactory.newLatLngZoom(userLocation, 16f)
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize().background(IvoryBackground)) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Column(
                 modifier = Modifier.onGloballyPositioned { coords ->
@@ -219,7 +209,7 @@ fun BuyerSearchScreen(
                 }
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -228,9 +218,10 @@ fun BuyerSearchScreen(
                         onValueChange = { searchViewModel.onSearchQueryChange(it) },
                         placeholder = {
                             Text(
-                                "¿Qué deseas comer hoy?",
+                                "¿Qué quieres comer hoy?",
                                 fontFamily = Nunito,
-                                color = TextoSecundario
+                                color = TextoSecundario,
+                                fontSize = 14.sp
                             )
                         },
                         leadingIcon = {
@@ -241,8 +232,19 @@ fun BuyerSearchScreen(
                                 modifier = Modifier.clickable { searchViewModel.ejecutarBusquedaInteligente() }
                             )
                         },
+                        trailingIcon = {
+                            if (queryText.isNotEmpty()) {
+                                IconButton(onClick = { searchViewModel.onSearchQueryChange("") }) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Limpiar texto",
+                                        tint = TextoSecundario
+                                    )
+                                }
+                            }
+                        },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(16.dp),
                         singleLine = true,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                             imeAction = androidx.compose.ui.text.input.ImeAction.Search
@@ -276,11 +278,14 @@ fun BuyerSearchScreen(
                             }
                         }
                     ) {
-                        IconButton(
+                        Surface(
                             onClick = { cartViewModel.openReviewSheet() },
+                            shape = CircleShape,
+                            color = SuperficieCampo,
+                            border = BorderStroke(1.dp, BordeSuave),
+                            shadowElevation = 1.dp,
                             modifier = Modifier
-                                .background(SuperficieCampo, shape = CircleShape)
-                                .size(48.dp)
+                                .size(50.dp)
                                 .onGloballyPositioned { coords ->
                                     val pos = coords.positionInWindow()
                                     CartFlightBus.cartAnchor = Offset(
@@ -289,16 +294,18 @@ fun BuyerSearchScreen(
                                     )
                                 }
                         ) {
-                            Icon(
-                                Icons.Default.ShoppingCart,
-                                contentDescription = "Carrito",
-                                tint = NegroContorno
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.ShoppingCart,
+                                    contentDescription = "Carrito",
+                                    tint = NegroContorno
+                                )
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -311,16 +318,16 @@ fun BuyerSearchScreen(
                         if (ultimasBusquedas.isEmpty()) {
                             item {
                                 Text(
-                                    "Aún no tienes búsquedas recientes",
-                                    fontSize = 13.sp,
+                                    "Descubre huariques y platos cerca de ti",
+                                    fontSize = 12.sp,
                                     fontFamily = Nunito,
                                     color = TextoSecundario,
-                                    modifier = Modifier.padding(vertical = 8.dp)
+                                    modifier = Modifier.padding(vertical = 4.dp)
                                 )
                             }
                         } else {
                             items(ultimasBusquedas, key = { it }) { historialItem ->
-                                FilterChip(
+                                InputChip(
                                     selected = false,
                                     onClick = {
                                         searchViewModel.onSearchQueryChange(historialItem)
@@ -330,8 +337,8 @@ fun BuyerSearchScreen(
                                         Text(
                                             historialItem,
                                             fontFamily = Nunito,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 12.sp
                                         )
                                     },
                                     trailingIcon = {
@@ -342,19 +349,19 @@ fun BuyerSearchScreen(
                                             modifier = Modifier
                                                 .size(14.dp)
                                                 .clickable {
-                                                    searchViewModel.borrarTodoElHistorial()
+                                                    searchViewModel.eliminarBusquedaIndividual(historialItem)
                                                 }
                                         )
                                     },
                                     shape = CircleShape,
-                                    border = FilterChipDefaults.filterChipBorder(
+                                    border = InputChipDefaults.inputChipBorder(
                                         enabled = true,
                                         selected = false,
                                         borderColor = BordeSuave
                                     ),
-                                    colors = FilterChipDefaults.filterChipColors(
+                                    colors = InputChipDefaults.inputChipColors(
                                         containerColor = SuperficieCampo,
-                                        labelColor = TextoSecundario
+                                        labelColor = NegroContorno
                                     )
                                 )
                             }
@@ -362,27 +369,27 @@ fun BuyerSearchScreen(
                     }
 
                     if (ultimasBusquedas.isNotEmpty()) {
-                        Text(
-                            "Limpiar",
-                            fontSize = 12.sp,
-                            fontFamily = Nunito,
-                            fontWeight = FontWeight.Bold,
-                            color = RojoGochujang,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .clickable {
-                                    searchViewModel.borrarTodoElHistorial()
-                                }
-                        )
+                        TextButton(
+                            onClick = { searchViewModel.borrarTodoElHistorial() },
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Text(
+                                "Limpiar",
+                                fontSize = 12.sp,
+                                fontFamily = Nunito,
+                                fontWeight = FontWeight.Bold,
+                                color = RojoGochujang
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, BordeSuave),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
@@ -393,80 +400,157 @@ fun BuyerSearchScreen(
                         properties = MapProperties(isMyLocationEnabled = state.hasLocationPermission),
                         uiSettings = MapUiSettings(
                             zoomControlsEnabled = false,
-                            myLocationButtonEnabled = state.hasLocationPermission,
+                            myLocationButtonEnabled = false,
                             rotationGesturesEnabled = false,
                             tiltGesturesEnabled = false,
-                            scrollGesturesEnabled = true,
-                            zoomGesturesEnabled = true
+                            scrollGesturesEnabled = !state.isLoadingLocation,
+                            zoomGesturesEnabled = !state.isLoadingLocation
                         )
                     ) {
                         huariquesRadar.forEach { huarique ->
                             val markerState = rememberMarkerState(
-                                position = LatLng(
-                                    huarique.latitud,
-                                    huarique.longitud
-                                )
+                                position = LatLng(huarique.latitud, huarique.longitud)
                             )
 
                             MarkerInfoWindowContent(
                                 state = markerState,
                                 title = huarique.nombre,
                                 onInfoWindowClick = {
-                                    abrirIndicacionesGoogleMaps(
-                                        latitud = huarique.latitud,
-                                        longitud = huarique.longitud
-                                    )
+                                    abrirIndicacionesGoogleMaps(huarique.latitud, huarique.longitud)
                                 }
                             ) {
-                                Column(
-                                    modifier = Modifier
-                                        .background(IvoryBackground, shape = RoundedCornerShape(12.dp))
-                                        .border(1.dp, NaranjaCercania, RoundedCornerShape(12.dp))
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = IvoryBackground,
+                                    border = BorderStroke(1.dp, NaranjaCercania),
+                                    shadowElevation = 4.dp
                                 ) {
-                                    Text(
-                                        text = huarique.nombre,
-                                        fontSize = 14.sp,
-                                        fontFamily = Baloo2,
-                                        fontWeight = FontWeight.Bold,
-                                        color = NegroContorno
-                                    )
-                                    Text(
-                                        text = "${huarique.category} • ${huarique.distancia}",
-                                        fontSize = 12.sp,
-                                        fontFamily = Nunito,
-                                        color = TextoSecundario
-                                    )
-                                    Text(
-                                        text = "Hace delivery hasta ${String.format(Locale.US, "%.1f", huarique.maxDeliveryDistanceKm)} km",
-                                        fontSize = 12.sp,
-                                        fontFamily = Nunito,
-                                        fontWeight = FontWeight.Bold,
-                                        color = VerdeMatcha
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Directions,
-                                            contentDescription = "Cómo llegar",
-                                            tint = NaranjaCercania,
-                                            modifier = Modifier.size(14.dp)
+                                        Text(
+                                            text = huarique.nombre,
+                                            fontSize = 14.sp,
+                                            fontFamily = Baloo2,
+                                            fontWeight = FontWeight.Bold,
+                                            color = NegroContorno
                                         )
                                         Text(
-                                            text = "Toca esta tarjeta para ver cómo llegar ➔",
+                                            text = "${huarique.category} • ${huarique.distancia}",
+                                            fontSize = 12.sp,
+                                            fontFamily = Nunito,
+                                            color = TextoSecundario
+                                        )
+                                        Text(
+                                            text = "Delivery hasta ${huarique.maxDeliveryDistanceKm} km",
                                             fontSize = 11.sp,
                                             fontFamily = Nunito,
                                             fontWeight = FontWeight.Bold,
-                                            color = NaranjaCercania
+                                            color = VerdeMatcha
+                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            modifier = Modifier.padding(top = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Directions,
+                                                contentDescription = null,
+                                                tint = NaranjaCercania,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Text(
+                                                text = "Cómo llegar ➔",
+                                                fontSize = 11.sp,
+                                                fontFamily = Nunito,
+                                                fontWeight = FontWeight.Bold,
+                                                color = NaranjaCercania
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    SmallFloatingActionButton(
+                        onClick = {
+                            state = state.copy(locationTrigger = state.locationTrigger + 1)
+                        },
+                        containerColor = IvoryBackground,
+                        contentColor = NegroContorno,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MyLocation,
+                            contentDescription = "Mi ubicación",
+                            tint = RojoGochujang
+                        )
+                    }
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = state.isLoadingLocation,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                        modifier = Modifier.align(Alignment.Center)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = IvoryBackground,
+                            border = BorderStroke(1.dp, BordeSuave),
+                            shadowElevation = 8.dp,
+                            modifier = Modifier
+                                .padding(horizontal = 32.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = SuperficieCampo,
+                                    modifier = Modifier.size(56.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.NearMe,
+                                            contentDescription = null,
+                                            tint = RojoGochujang,
+                                            modifier = Modifier.size(28.dp)
                                         )
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Buscando huariques cerca de ti...",
+                                    fontSize = 16.sp,
+                                    fontFamily = Baloo2,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NegroContorno,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Estamos obteniendo tu ubicación para mostrarte las mejores opciones a tu alrededor.",
+                                    fontSize = 13.sp,
+                                    fontFamily = Nunito,
+                                    color = TextoSecundario,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 18.sp
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                LinearProgressIndicator(
+                                    color = RojoGochujang,
+                                    trackColor = SuperficieCampo,
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.6f)
+                                        .height(4.dp)
+                                )
                             }
                         }
                     }
@@ -475,7 +559,7 @@ fun BuyerSearchScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp)
+                            .padding(bottom = 8.dp)
                     ) {
                         HuariquesRadarCarousel(
                             huariquesRadar = huariquesRadar,
@@ -487,48 +571,11 @@ fun BuyerSearchScreen(
                             }
                         )
                     }
-
-                    // Dentro de tu Box:
-                    Column(
-                        modifier = Modifier.align(Alignment.TopCenter)
-                    ) {
-                        AnimatedVisibility(
-                            visible = state.isLoadingLocation,
-                            modifier = Modifier.padding(top = 12.dp),
-                            enter = fadeIn(),
-                            exit = fadeOut()
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = IvoryBackground,
-                                shadowElevation = 4.dp
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                        color = RojoGochujang
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "Buscando tu ubicación...",
-                                        fontSize = 12.sp,
-                                        fontFamily = Nunito,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = NegroContorno
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
 
-        val overlayTopOffset = 16.dp + headerHeightDp + 10.dp
+        val overlayTopOffset = 12.dp + headerHeightDp
 
         if (queryText.isNotEmpty()) {
             Box(
@@ -563,24 +610,24 @@ fun BuyerSearchScreen(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
                             tint = BordeSuave,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(56.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "No encontramos platos para \"$queryText\"",
-                            fontSize = 15.sp,
+                            "Sin resultados para \"$queryText\"",
+                            fontSize = 16.sp,
                             fontFamily = Baloo2,
                             fontWeight = FontWeight.Bold,
                             color = NegroContorno,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            "Prueba con otro nombre o revisa los huariques cercanos en el mapa",
+                            "Intenta buscar términos más generales como \"Ceviche\", \"Hamburguesa\" o explora el mapa.",
                             fontSize = 13.sp,
                             fontFamily = Nunito,
                             color = TextoSecundario,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

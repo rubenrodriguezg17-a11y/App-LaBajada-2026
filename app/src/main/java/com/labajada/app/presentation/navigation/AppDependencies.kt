@@ -42,6 +42,7 @@ class AppDependencies(context: Context) {
     val saveSearchQueryUseCase = SaveSearchQueryUseCase(searchRepository)
     val getRecentSearchHistoryUseCase = GetRecentSearchHistoryUseCase(searchRepository)
     val clearSearchHistoryUseCase = ClearSearchHistoryUseCase(searchRepository)
+    val deleteSearchQueryUseCase = DeleteSearchQueryUseCase(searchRepository)
     val manageFavoriteRestaurantUseCase = ManageFavoriteRestaurantUseCase(restaurantRepository)
     val getAllDishesUseCase = GetAllDishesUseCase(dishRepository)
     val getActiveRestaurantsUseCase = GetActiveRestaurantsUseCase()

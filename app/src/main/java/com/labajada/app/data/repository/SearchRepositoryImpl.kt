@@ -29,4 +29,8 @@ class SearchRepositoryImpl(
     override suspend fun clearHistory(buyerId: String) {
         searchDao.clearAllSearchHistory(buyerId)
     }
+
+    override suspend fun deleteSearchQuery(buyerId: String, query: String) {
+        searchDao.deleteSearchQuery(buyerId, query)
+    }
 }

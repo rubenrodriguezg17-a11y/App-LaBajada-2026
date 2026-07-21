@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.labajada.app.core.extensions.toPrecioDouble
 import com.labajada.app.domain.model.Dish
 import com.labajada.app.domain.model.FavoriteRestaurant
@@ -16,6 +19,7 @@ import com.labajada.app.domain.repository.UserRepository
 import com.labajada.app.domain.usecase.auth.GetActiveUserUseCase
 import com.labajada.app.domain.usecase.restaurant.GetActiveRestaurantsUseCase
 import com.labajada.app.domain.usecase.search.ClearSearchHistoryUseCase
+import com.labajada.app.domain.usecase.search.DeleteSearchQueryUseCase
 import com.labajada.app.domain.usecase.search.GetAllDishesUseCase
 import com.labajada.app.domain.usecase.search.GetRecentSearchHistoryUseCase
 import com.labajada.app.domain.usecase.search.ManageFavoriteRestaurantUseCase
@@ -23,6 +27,7 @@ import com.labajada.app.domain.usecase.search.SaveSearchQueryUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BuyerSearchViewModel(
@@ -31,6 +36,7 @@ class BuyerSearchViewModel(
     private val manageFavoriteRestaurantUseCase: ManageFavoriteRestaurantUseCase,
     private val getActiveUserUseCase: GetActiveUserUseCase,
     private val clearSearchHistoryUseCase: ClearSearchHistoryUseCase,
+    private val deleteSearchQueryUseCase: DeleteSearchQueryUseCase,
     private val getAllDishesUseCase: GetAllDishesUseCase,
     private val dishRepository: DishRepository,
     private val restaurantRepository: RestaurantRepository,
@@ -180,30 +186,42 @@ class BuyerSearchViewModel(
     }
 
     @SuppressLint("MissingPermission")
-    fun rastrearUbicacionActual(context: Context) {
-        try {
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    _userLocation.value = LatLng(location.latitude, location.longitude)
+    fun rastrearUbicacionActual(context: Context, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+                // 1. Intento rápido: última ubicación cacheada.
+                val ultimaConocida = fusedLocationClient.lastLocation.await()
+                if (ultimaConocida != null) {
+                    _userLocation.value = LatLng(ultimaConocida.latitude, ultimaConocida.longitude)
+                    onResult(true)
+                    return@launch
                 }
+
+                // 2. Fallback: pedir una ubicación fresca (emuladores o sin fix cacheado).
+                val cts = CancellationTokenSource()
+                val request = CurrentLocationRequest.Builder()
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                    .build()
+                val fresca = fusedLocationClient.getCurrentLocation(request, cts.token).await()
+
+                if (fresca != null) {
+                    _userLocation.value = LatLng(fresca.latitude, fresca.longitude)
+                    onResult(true)
+                } else {
+                    android.util.Log.w("BuyerSearchViewModel", "No se pudo obtener ubicación (null)")
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("BuyerSearchViewModel", "Error al obtener ubicacion actual", e)
+                onResult(false)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("BuyerSearchViewModel", "Error al obtener ubicacion actual", e)
         }
     }
 
     fun onSearchQueryChange(value: String) {
         _searchQuery.update { value }
-    }
-
-    fun ejecutarBusqueda() {
-        viewModelScope.launch {
-            val buyerId = requireBuyerId() ?: return@launch
-            if (_searchQuery.value.isNotBlank()) {
-                saveSearchQueryUseCase(buyerId, _searchQuery.value)
-            }
-        }
     }
 
     fun agregarRestauranteAFavoritos(id: String, nombre: String, categoria: String, direccion: String) {
@@ -227,6 +245,13 @@ class BuyerSearchViewModel(
         }
     }
 
+    fun eliminarBusquedaIndividual(query: String) {
+        viewModelScope.launch {
+            val buyerId = requireBuyerId() ?: return@launch
+            deleteSearchQueryUseCase(buyerId, query)
+        }
+    }
+
     fun ejecutarBusquedaInteligente() {
         val query = _searchQuery.value.trim()
         val queryFilter= query.lowercase(java.util.Locale.ROOT)
@@ -235,7 +260,7 @@ class BuyerSearchViewModel(
         viewModelScope.launch {
             try {
                 val buyerId = requireBuyerId() ?: return@launch
-                val historialActual = searchHistory.value
+                val historialActual = getRecentSearchHistoryUseCase(buyerId).first()
                 if (!historialActual.contains(query)) {
                     saveSearchQueryUseCase(buyerId, query)
                 }

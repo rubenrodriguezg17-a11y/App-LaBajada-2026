@@ -7,6 +7,12 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Necesario en Android 11+ (package visibility) para que resolveActivity()
+         detecte Google Maps al abrir indicaciones de "Cómo llegar". -->
+    <queries>
+        <package android:name="com.google.android.apps.maps" />
+    </queries>
+
     <application
 
         android:allowBackup="true"

@@ -35,7 +35,7 @@ import com.labajada.app.domain.model.OrderItem
         RestaurantEntity::class,
         SessionEntity::class
     ],
-    version = 9,
+    version = 10, // subida desde 9: nuevo índice único (buyerId, searchQuery) en search_history
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

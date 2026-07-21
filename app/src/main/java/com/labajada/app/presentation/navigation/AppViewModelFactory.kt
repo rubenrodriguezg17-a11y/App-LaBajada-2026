@@ -66,6 +66,7 @@ class AppViewModelFactory(
                     manageFavoriteRestaurantUseCase = deps.manageFavoriteRestaurantUseCase,
                     getActiveUserUseCase = deps.getActiveUserUseCase,
                     clearSearchHistoryUseCase = deps.clearSearchHistoryUseCase,
+                    deleteSearchQueryUseCase = deps.deleteSearchQueryUseCase,
                     getAllDishesUseCase = deps.getAllDishesUseCase,
                     dishRepository = deps.dishRepository,
                     restaurantRepository = deps.restaurantRepository,

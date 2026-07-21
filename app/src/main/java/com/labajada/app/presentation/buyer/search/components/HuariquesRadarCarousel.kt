@@ -17,9 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,8 +75,8 @@ fun HuariquesRadarCarousel(
                     },
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, BordeSuave),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                border = BorderStroke(1.dp, BordeSuave.copy(alpha = 0.7f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Box(
@@ -104,16 +107,19 @@ fun HuariquesRadarCarousel(
                             }
                         }
 
+                        // Scrim reforzado: 3 paradas para asegurar legibilidad del nombre
+                        // aunque la foto de portada sea muy clara/luminosa (cielos, paredes blancas, etc.)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
+                                .fillMaxHeight(0.65f)
                                 .align(Alignment.BottomCenter)
                                 .background(
                                     Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.8f)
+                                        colorStops = arrayOf(
+                                            0f to Color.Transparent,
+                                            0.5f to Color.Black.copy(alpha = 0.35f),
+                                            1f to Color.Black.copy(alpha = 0.82f)
                                         )
                                     )
                                 )
@@ -175,10 +181,17 @@ fun HuariquesRadarCarousel(
 
                         Text(
                             text = huarique.nombre,
-                            fontSize = 15.sp,
-                            fontFamily = Baloo2,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            style = TextStyle(
+                                fontSize = 15.sp,
+                                fontFamily = Baloo2,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                shadow = Shadow(
+                                    color = Color.Black.copy(alpha = 0.55f),
+                                    offset = Offset(0f, 1f),
+                                    blurRadius = 6f
+                                )
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier

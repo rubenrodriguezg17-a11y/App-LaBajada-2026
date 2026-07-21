@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -66,7 +67,11 @@ fun BuyerDashboardScreen(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = Color.White, tonalElevation = 8.dp) {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+                modifier = Modifier.shadow(elevation = 8.dp)
+            ) {
                 navItems.forEach { item ->
                     val isSelected = selectedTab == item.index
                     val scale by animateFloatAsState(
@@ -130,7 +135,7 @@ fun BuyerDashboardScreen(
                         latitud = ubicacionActual.latitude,
                         longitud = ubicacionActual.longitude
                     )
-                    ) { order ->
+                ) { order ->
                     lastOrder = order
                     showSuccessDialog = true
                     confettiTrigger = System.currentTimeMillis()
